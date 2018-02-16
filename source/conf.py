@@ -61,7 +61,7 @@ master_doc = 'index'
 # General information about the project.
 project = 'Lesson Plan'
 
-author = 'Rick Riehle'
+author = "Brian Dorsey, Christopher Barker, Christy Heaton, Cris Ewing, Jon Jacky, Joseph Schilz, Maria McKinley, Rick Riehle"
 
 copyright = (
     "{}, University of Washington, {}. Creative Commons Attribution-ShareAlike 3.0 license".format(
@@ -110,7 +110,7 @@ html_theme = 'alabaster'
 # documentation.
 #
 html_theme_options = {
-    'fixed_sidebar': True,
+    'fixed_sidebar': False,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
