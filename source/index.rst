@@ -8,7 +8,7 @@ Profiling & Performance
 =======================
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contents:
 
 
@@ -24,21 +24,29 @@ Learning Objectives
 
 Upon successful completion of this lesson, you will be able to:
 
-* Use timing strategies to assess portions of
-* Identify bottlenecks in Python code.
-* Use PyPy to run simple Python scripts to improve their performance.
-*
+* use timing strategies to assess code constructs.
+* identify bottlenecks in Python code.
+* use PyPy to run simple Python scripts to improve their performance.
+* refactor Python code to use Cython for performance improvement.
 
 
 New Words or Concepts
 =====================
 
+* Profiling
+* timeit
+* memoization
 * PyPy
 * Cython
 
 
 Required Reading
 ================
+
+* Profiling
+
+  | https://docs.python.org/3.6/library/debug.html
+  | https://docs.python.org/3.6/library/timeit.html
 
 
 
@@ -51,6 +59,44 @@ Optional Reading
 *******
 Content
 *******
+
+
+Profiling
+=========
+
+time & timeit
+-------------
+
+Unix Command line tool that times the duration of processes: time
+
+.. code-block:: bash
+
+    $ time -p find ~/Documents
+    $ time --verbose find ~/Documents
+
+Gnu-time installed via Homebrew on Mac OS X for more depth.
+
+.. code-block:: bash
+
+    $ brew install gnu-time
+    $ gtime --verbose find ~/Documents
+
+
+Memoization
+===========
+
+.. Resource:  https://anandology.com/python-practice-book/functional-programming.html#example-memoize
+
+.. Resource: Screenshots of Joe's code from 2018-03-07
+
+
+
+PyPy
+====
+
+
+Cython
+======
 
 
 
