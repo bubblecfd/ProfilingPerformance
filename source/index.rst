@@ -419,6 +419,10 @@ Quiz
    | A little bit
    | Yeah, okay, it really helps
 
+6. Comprehensions, map and filter, and generators can often be used to accomplish the same tasks; therefore it does not matter which programming constructs is used.
+
+   | True
+   | False
 
 **********
 Activities
@@ -427,19 +431,15 @@ Activities
 Spend class time in groups or as a whole using any of the modules or techniques referenced above.  Of particular interest:
 
 * Explore code-only performance improvement strategies such as memoization.
-* Explore/demo cProfile side by side with PyCharm's built-in profilers
+* Explore/demo cProfile side by side with PyCharm's built-in profilers.
+* Explore/demo Python's memory_profiler.  https://pypi.python.org/pypi/memory_profiler
 * Use PyPy as the runtime interpreter for code developed by students during the curriculum.
-
-Play with Cython and the Great Circle code!
-
-* Abandon Python's math library and use ``cdef extern`` to import and access C math functions from the Python code.  (This provides vast improvements to the great_circle code!)
+* Play with Cython and the Great Circle code!
+* Abandon Python's math library and use ``cdef extern`` to import and access C math functions into the Python code.  (This vastly improves the performance of the Great Circle code!)
 * Dig into the compile and link steps required by Cython.
-* Work with setup files or any of the ways to build cython-generated libraries.
-  | http://cython.readthedocs.io/en/latest/src/quickstart/build.html
-* Work with Cython profiling
-  | http://docs.cython.org/en/latest/src/tutorial/profiling_tutorial.html
-* Create a Makefile to manage the build (compile/link steps) for all the Cython code you're generating.
-  | https://www.gnu.org/software/make/
+* Work with setup files or any of the other methods to generate cython libraries.  http://cython.readthedocs.io/en/latest/src/quickstart/build.html
+* Work with Cython profiling. http://docs.cython.org/en/latest/src/tutorial/profiling_tutorial.html
+* Create a Makefile to manage the build (compile/link steps) for all the Cython code you're generating.  https://www.gnu.org/software/make/
 
 
 **********
