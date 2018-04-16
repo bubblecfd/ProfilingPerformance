@@ -381,11 +381,11 @@ The setup file tells Python how to have Cython build a statically compiled libra
 
     $ python great_circle_setup_v1.py build_ext --inplace
 
-The video links all of this information together.  Arm yourself with the sample code when you watch Part 2.
-
-:download:` <>`
-
 There are two main hurdles in learning to use Cython.  The first involves the extensions to the Python language which are for the most part borrowed directly from C.  Without familiarity with C it may not be clear what these new language elements mean, or how or why they are used.  The second hurdle involves the build process associated with statically compiled languages --- i.e., the separate compile, link and run steps which will feel foreign to someone coming strictly from an interpreted language like Python.  In both cases programmers familiar with C will have an advantage over those without.  As with any new worthwhile programming strategy it will take an investment in time and effort to learn this new tool.
+
+The video links start to pull this information together.  Arm yourself with the sample code when you watch Part 2.
+
+https://github.com/rriehle/ProfilingPerformance/tree/master/source/solutions/cython
 
 [Video: Great Circle Part 2]
 
@@ -417,7 +417,7 @@ Quiz
 
    | Not really
    | A little bit
-   | Yeah, okay, it helps
+   | Yeah, okay, it really helps
 
 
 **********
