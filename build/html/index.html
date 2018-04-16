@@ -45,78 +45,416 @@
 </div>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>[1-3 paragraphs introducing topic(s)]</p>
+<p>In this module we cover strategies, tools and pitfalls around understanding the performance of a python code base.  We mention or demonstrate analysis tools built into specific operating systems or available via python itself.  We then we look at techniques for improving performance, including coding techniques, alternate Python interpreters, and interaction with C.</p>
+<p>Keep in mind that the material presented herein is not the last word on this topic, rather, as is often the case with the material in the program, it is merely the first.  There are related topics covered elsewhere in the curriculum, such as concurrency and asynchronous programming; both topics are about improving the performance or responsiveness of systems.  Also keep in mind that related topics are covered more deeply in other areas of the curriculum, so that for instance it might be worthwhile referencing the material on map/filter, comprehensions, lambdas and other functional programming constructs from their respective lessons while or before continuing with this lesson.</p>
 <div class="section" id="learning-objectives">
 <h3>Learning Objectives<a class="headerlink" href="#learning-objectives" title="Permalink to this headline">¶</a></h3>
 <p>Upon successful completion of this lesson, you will be able to:</p>
 <ul class="simple">
+<li>use profiling strategies to identify bottlenecks in Python code.</li>
 <li>use timing strategies to assess code constructs.</li>
-<li>identify bottlenecks in Python code.</li>
 <li>use PyPy to run simple Python scripts to improve their performance.</li>
 <li>refactor Python code to use Cython for performance improvement.</li>
 </ul>
+</div>
+<div class="section" id="recommended-text">
+<h3>Recommended Text<a class="headerlink" href="#recommended-text" title="Permalink to this headline">¶</a></h3>
+<div class="line-block">
+<div class="line">Mastering Python High Performance</div>
+<div class="line">by Fernando Doglio</div>
+<div class="line">Published September 2015</div>
+<div class="line">ISBN: 9781783989300</div>
+</div>
+<p><a class="reference external" href="https://www.packtpub.com/application-development/mastering-python-high-performance">https://www.packtpub.com/application-development/mastering-python-high-performance</a></p>
 </div>
 <div class="section" id="new-words-or-concepts">
 <h3>New Words or Concepts<a class="headerlink" href="#new-words-or-concepts" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Profiling</li>
+<li>cProfile</li>
+<li>time  (GNU Time)</li>
 <li>timeit</li>
+<li>Great Circle</li>
 <li>memoization</li>
 <li>PyPy</li>
 <li>Cython</li>
+<li>cdef</li>
 </ul>
 </div>
 <div class="section" id="required-reading">
 <h3>Required Reading<a class="headerlink" href="#required-reading" title="Permalink to this headline">¶</a></h3>
 <ul>
-<li><p class="first">Profiling</p>
+<li><p class="first">Profiling &amp; Timing</p>
 <div class="line-block">
 <div class="line"><a class="reference external" href="https://docs.python.org/3.6/library/debug.html">https://docs.python.org/3.6/library/debug.html</a></div>
+<div class="line"><a class="reference external" href="https://docs.python.org/3.6/library/profile.html">https://docs.python.org/3.6/library/profile.html</a></div>
 <div class="line"><a class="reference external" href="https://docs.python.org/3.6/library/timeit.html">https://docs.python.org/3.6/library/timeit.html</a></div>
+</div>
+</li>
+<li><p class="first">PyPy</p>
+<div class="line-block">
+<div class="line"><a class="reference external" href="http://pypy.org/">http://pypy.org/</a></div>
+</div>
+</li>
+<li><p class="first">Cython</p>
+<div class="line-block">
+<div class="line"><a class="reference external" href="http://cython.org">http://cython.org</a></div>
 </div>
 </li>
 </ul>
 </div>
 <div class="section" id="optional-reading">
 <h3>Optional Reading<a class="headerlink" href="#optional-reading" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">Profiling</p>
+<div class="line-block">
+<div class="line"><a class="reference external" href="https://pypi.python.org/pypi/memory_profiler">https://pypi.python.org/pypi/memory_profiler</a></div>
+<div class="line"><a class="reference external" href="https://www.jetbrains.com/help/pycharm/profiler.html">https://www.jetbrains.com/help/pycharm/profiler.html</a></div>
+</div>
+</li>
+</ul>
 </div>
 </div>
 <div class="section" id="content">
 <h2>Content<a class="headerlink" href="#content" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="profiling">
-<h3>Profiling<a class="headerlink" href="#profiling" title="Permalink to this headline">¶</a></h3>
-<div class="section" id="time-timeit">
-<h4>time &amp; timeit<a class="headerlink" href="#time-timeit" title="Permalink to this headline">¶</a></h4>
-<p>Unix Command line tool that times the duration of processes: time</p>
+<p>At some point, perhaps even during this curriculum, you may have heard someone say that comprehensions are fast.  In a certain general sense perhaps they are, but in this context — performance — speed should strictly be considered a relative metric.  In other words the question is not whether comprehensions are fast in general, but whether a comprehension is fast relative to some other construct in the specific context of the programming problem you are trying to address.</p>
+<p>To carry this thought further, consider some of the alternatives to comprehensions.  Do you need to instantiate a list (or dictionary) immediately?  If not, perhaps your use case would be better served by map and filter.  Map returns a lazy iterator in Python 3.x, which is to say that when it is called it does not instantiate an entire list as does a comprehension.  Instead a map object yields up subsequent values on subsequent calls thereby spreading computational cost over a larger timespan.  Perhaps that is enough to make your graphic user interface or ReST API more responsive.  Speaking of yield, would a generator be better than a comprehension for your use case?  If you strictly need a sequence generated by an algorithm, it may well be, both in terms of memory consumption and in terms of raw speed.</p>
+<p>However, knowing your options in terms of programming constructs is not the last word on understanding the performance of your program.  And gaining a view into the performance of your program in isolation does not necessarily translate into an understanding of its performance in a production system incurring high, bursting loads, experiencing network latencies, blocking on calls to a message queue, or retrieving data from a database running on a separate machine.</p>
+<p>Keep all of this in mind, because one of the themes of this lesson is that you should be skeptical of what you think you know until you have observed a system in a representative context.</p>
+<div class="section" id="profiling-timing">
+<h3>Profiling &amp; Timing<a class="headerlink" href="#profiling-timing" title="Permalink to this headline">¶</a></h3>
+<p>In its broadest sense profiling is observing and measuring a system, an individual program or a code snippet in a context.  The goal is to understand performance and resource consumption characteristics.  The context should be representative, and when possible it should avoid the introduction of extraneous artifacts.  For instance, when profiling code snippets of alternate algorithms, the same python interpreter and version should be used.  When profiling your code on alternate interpreters, a single machine should be used.  If a program depends on user input or on data from extraneous systems, mock or simulate these vectors in a problematically reproducible fashion so that multiple runs of the program are not differentially influenced.  In short, avoid confounding factors and control for your variables.</p>
+<p>At a high level, before resorting to tools specific to Python, operating systems provide performance monitoring tools such as Activity Monitor (OS X), top (Linux &amp; OS X), and Performance Monitor (Windows).  These tools can be a good first place to look for memory, processor or network hogs.</p>
+<div class="section" id="time">
+<h4>time<a class="headerlink" href="#time" title="Permalink to this headline">¶</a></h4>
+<p>GNU Time, or something very close to it, is available on all major operating systems.  It measures the duration of processes and can be used to clock virtually any program with a command line interface.</p>
+<p><a class="reference external" href="https://www.gnu.org/software/time/">https://www.gnu.org/software/time/</a></p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nb">time</span> -p find ~/Documents
-$ <span class="nb">time</span> --verbose find ~/Documents
+real <span class="m">3</span>.02
+user <span class="m">0</span>.15
+sys <span class="m">0</span>.62
 </pre></div>
 </div>
 <p>Gnu-time installed via Homebrew on Mac OS X for more depth.</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ brew install gnu-time
 $ gtime --verbose find ~/Documents
+    Command being timed: <span class="s2">&quot;find /Users/demo-user/Documents&quot;</span>
+    User <span class="nb">time</span> <span class="o">(</span>seconds<span class="o">)</span>: <span class="m">0</span>.06
+    System <span class="nb">time</span> <span class="o">(</span>seconds<span class="o">)</span>: <span class="m">0</span>.27
+    Percent of CPU this job got: <span class="m">62</span>%
+    Elapsed <span class="o">(</span>wall clock<span class="o">)</span> <span class="nb">time</span> <span class="o">(</span>h:mm:ss or m:ss<span class="o">)</span>: <span class="m">0</span>:00.54
+    Average shared text size <span class="o">(</span>kbytes<span class="o">)</span>: <span class="m">0</span>
+    Average unshared data size <span class="o">(</span>kbytes<span class="o">)</span>: <span class="m">0</span>
+    Average stack size <span class="o">(</span>kbytes<span class="o">)</span>: <span class="m">0</span>
+    Average total size <span class="o">(</span>kbytes<span class="o">)</span>: <span class="m">0</span>
+    Maximum resident <span class="nb">set</span> size <span class="o">(</span>kbytes<span class="o">)</span>: <span class="m">1292</span>
+    Average resident <span class="nb">set</span> size <span class="o">(</span>kbytes<span class="o">)</span>: <span class="m">0</span>
+    Major <span class="o">(</span>requiring I/O<span class="o">)</span> page faults: <span class="m">0</span>
+    Minor <span class="o">(</span>reclaiming a frame<span class="o">)</span> page faults: <span class="m">449</span>
+    Voluntary context switches: <span class="m">1384</span>
+    Involuntary context switches: <span class="m">1028</span>
+    Swaps: <span class="m">0</span>
+    File system inputs: <span class="m">0</span>
+    File system outputs: <span class="m">0</span>
+    Socket messages sent: <span class="m">0</span>
+    Socket messages received: <span class="m">0</span>
+    Signals delivered: <span class="m">0</span>
+    Page size <span class="o">(</span>bytes<span class="o">)</span>: <span class="m">4096</span>
+    Exit status: <span class="m">0</span>
 </pre></div>
 </div>
+<p>[Video: Time]</p>
 </div>
+<div class="section" id="timeit">
+<h4>timeit<a class="headerlink" href="#timeit" title="Permalink to this headline">¶</a></h4>
+<p>In addition to the command line time tool referenced above which is useful to time the run of your entire script, Python offers timeit which allows you to time expressions and calls within python modules.</p>
+<p><a class="reference external" href="https://docs.python.org/3.6/library/timeit.html">https://docs.python.org/3.6/library/timeit.html</a></p>
+<p>Timeit is used extensively in the videos associated with this lesson.</p>
 </div>
-<div class="section" id="memoization">
-<h3>Memoization<a class="headerlink" href="#memoization" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="cprofile">
+<h4>cProfile<a class="headerlink" href="#cprofile" title="Permalink to this headline">¶</a></h4>
+<p>The same manner in which Python offers debuggers (pdb, ipdb) it also supplies a profiler.  With little or no modification to your module’s source cProfile provides statistics on the number of times a function or method is called and the cumulative time spent within.</p>
+<p>The profiler when invoked from the command line with default arguments provides information not only about your script, but also about how it exercises the Python interpreter.</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>$ python -m cProfile great_circle.py</dt>
+<dd><blockquote class="first">
+<div><blockquote>
+<div>12000539 function calls (12000538 primitive calls) in 3.179 seconds</div></blockquote>
+<p>Ordered by: standard name</p>
+<dl class="docutils">
+<dt>ncalls  tottime  percall  cumtime  percall filename:lineno(function)</dt>
+<dd><blockquote class="first">
+<div>2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:103(release)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:143(__init__)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:147(__enter__)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:151(__exit__)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:157(_get_module_lock)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:176(cb)
+3    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:211(_call_with_frames_removed)</div></blockquote>
+<dl class="docutils">
+<dt>46    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:222(_verbose_message)</dt>
+<dd>2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:307(__init__)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:311(__enter__)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:318(__exit__)
+8    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:321(&lt;genexpr&gt;)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:35(_new_module)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:369(__init__)
+3    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:403(cached)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:416(parent)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:424(has_location)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:504(_init_module_attrs)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:564(module_from_spec)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:58(__init__)
+2    0.000    0.000    0.001    0.000 &lt;frozen importlib._bootstrap&gt;:651(_load_unlocked)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:707(find_spec)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:78(acquire)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:780(find_spec)
+6    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:843(__enter__)
+6    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:847(__exit__)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap&gt;:870(_find_spec)
+2    0.000    0.000    0.001    0.000 &lt;frozen importlib._bootstrap&gt;:936(_find_and_load_unlocked)
+2    0.000    0.000    0.001    0.000 &lt;frozen importlib._bootstrap&gt;:966(_find_and_load)</dd>
+<dt>11    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:1080(_path_importer_cache)</dt>
+<dd>2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:1117(_get_spec)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:1149(find_spec)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:1228(_get_spec)
+9    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:1233(find_spec)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:263(cache_from_source)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:361(_get_cached)
+9    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:37(_relax_case)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:393(_check_name_wrapper)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:430(_validate_bytecode_header)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:485(_compile_bytecode)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:52(_r_long)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:524(spec_from_file_location)</dd>
+</dl>
+<p>42    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:57(_path_join)
+42    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:59(&lt;listcomp&gt;)</p>
+<blockquote>
+<div>2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:63(_path_split)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:669(create_module)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:672(exec_module)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:743(get_code)</div></blockquote>
+<dl class="last docutils">
+<dt>12    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:75(_path_stat)</dt>
+<dd>1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:800(__init__)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:825(get_filename)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:830(get_data)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:840(path_stats)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:85(_path_is_mode_type)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:908(__init__)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:919(create_module)
+1    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:927(exec_module)
+2    0.000    0.000    0.000    0.000 &lt;frozen importlib._bootstrap_external&gt;:94(_path_isfile)
+1    0.000    0.000    0.000    0.000 cProfile.py:27(Profile)
+1    0.000    0.000    0.000    0.000 cProfile.py:5(&lt;module&gt;)</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+<p>1000000    0.150    0.000    0.150    0.000 great_circle.py:12(calculate_x)
+2000000    0.216    0.000    0.216    0.000 great_circle.py:16(calculate_coordinate)
+1000000    0.113    0.000    0.113    0.000 great_circle.py:20(calculate_theta)
+1000000    0.952    0.000    1.500    0.000 great_circle.py:24(calculate_acos)
+1000000    0.958    0.000    2.937    0.000 great_circle.py:28(great_circle_factored)</p>
+<blockquote>
+<div><blockquote>
+<div><blockquote>
+<div>1    0.240    0.240    3.178    3.178 great_circle.py:38(main)
+1    0.000    0.000    3.179    3.179 great_circle.py:8(&lt;module&gt;)
+1    0.000    0.000    0.000    0.000 {built-in method _imp._fix_co_filename}</div></blockquote>
+<dl class="docutils">
+<dt>10    0.000    0.000    0.000    0.000 {built-in method _imp.acquire_lock}</dt>
+<dd>1    0.000    0.000    0.000    0.000 {built-in method _imp.create_dynamic}
+1    0.000    0.000    0.000    0.000 {built-in method _imp.exec_dynamic}
+2    0.000    0.000    0.000    0.000 {built-in method _imp.is_builtin}
+2    0.000    0.000    0.000    0.000 {built-in method _imp.is_frozen}</dd>
+<dt>10    0.000    0.000    0.000    0.000 {built-in method _imp.release_lock}</dt>
+<dd>4    0.000    0.000    0.000    0.000 {built-in method _thread.allocate_lock}
+4    0.000    0.000    0.000    0.000 {built-in method _thread.get_ident}
+1    0.000    0.000    0.000    0.000 {built-in method builtins.__build_class__}
+2    0.000    0.000    0.000    0.000 {built-in method builtins.any}</dd>
+</dl>
+</div></blockquote>
+<dl class="docutils">
+<dt>2/1    0.000    0.000    3.179    3.179 {built-in method builtins.exec}</dt>
+<dd><p class="first">12    0.000    0.000    0.000    0.000 {built-in method builtins.getattr}
+13    0.000    0.000    0.000    0.000 {built-in method builtins.hasattr}
+12    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}</p>
+<blockquote class="last">
+<div>4    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+2    0.000    0.000    0.000    0.000 {built-in method from_bytes}
+1    0.000    0.000    0.000    0.000 {built-in method marshal.loads}</div></blockquote>
+</dd>
+</dl>
+</div></blockquote>
+<p>1000000    0.106    0.000    0.106    0.000 {built-in method math.acos}
+3000000    0.261    0.000    0.261    0.000 {built-in method math.cos}
+2000000    0.181    0.000    0.181    0.000 {built-in method math.sin}</p>
+<blockquote class="last">
+<div><blockquote>
+<div>4    0.000    0.000    0.000    0.000 {built-in method posix.fspath}
+4    0.000    0.000    0.000    0.000 {built-in method posix.getcwd}</div></blockquote>
+<dl class="docutils">
+<dt>12    0.000    0.000    0.000    0.000 {built-in method posix.stat}</dt>
+<dd>1    0.000    0.000    0.000    0.000 {method ‘disable’ of ‘_lsprof.Profiler’ objects}
+3    0.000    0.000    0.000    0.000 {method ‘endswith’ of ‘str’ objects}
+4    0.000    0.000    0.000    0.000 {method ‘get’ of ‘dict’ objects}</dd>
+<dt>44    0.000    0.000    0.000    0.000 {method ‘join’ of ‘str’ objects}</dt>
+<dd>1    0.000    0.000    0.000    0.000 {method ‘read’ of ‘_io.FileIO’ objects}</dd>
+</dl>
+<p>17    0.000    0.000    0.000    0.000 {method ‘rpartition’ of ‘str’ objects}
+86    0.000    0.000    0.000    0.000 {method ‘rstrip’ of ‘str’ objects}</p>
+</div></blockquote>
+</dd>
+</dl>
+</div></blockquote>
+<p>When invoked from within an interpreter you can have the profiler be more selective with its reporting.</p>
+<div class="highlight-ipython"><div class="highlight"><pre><span></span><span class="go">$ ipython</span>
+<span class="go">Python 3.6.4 (default, Jan  6 2018, 11:51:59)</span>
+<span class="go">Type &#39;copyright&#39;, &#39;credits&#39; or &#39;license&#39; for more information</span>
+<span class="go">IPython 6.2.1 -- An enhanced Interactive Python. Type &#39;?&#39; for help.</span>
+
+<span class="gp">In [1]: </span><span class="o">%</span><span class="k">run</span> great_circle.py
+
+<span class="gp">In [2]: </span><span class="o">%</span><span class="k">prun</span> main()
+<span class="go">         12000004 function calls in 3.165 seconds</span>
+
+<span class="go">   Ordered by: internal time</span>
+
+<span class="go">   ncalls  tottime  percall  cumtime  percall filename:lineno(function)</span>
+<span class="go">  1000000    0.937    0.000    1.479    0.000 great_circle.py:24(calculate_acos)</span>
+<span class="go">  1000000    0.926    0.000    2.898    0.000 great_circle.py:28(great_circle_factored)</span>
+<span class="go">        1    0.267    0.267    3.165    3.165 great_circle.py:38(main)</span>
+<span class="go">  3000000    0.258    0.000    0.258    0.000 {built-in method math.cos}</span>
+<span class="go">  2000000    0.219    0.000    0.219    0.000 great_circle.py:16(calculate_coordinate)</span>
+<span class="go">  2000000    0.185    0.000    0.185    0.000 {built-in method math.sin}</span>
+<span class="go">  1000000    0.157    0.000    0.157    0.000 great_circle.py:12(calculate_x)</span>
+<span class="go">  1000000    0.116    0.000    0.116    0.000 great_circle.py:20(calculate_theta)</span>
+<span class="go">  1000000    0.099    0.000    0.099    0.000 {built-in method math.acos}</span>
+<span class="go">        1    0.000    0.000    3.165    3.165 {built-in method builtins.exec}</span>
+<span class="go">        1    0.000    0.000    0.000    0.000 {method &#39;disable&#39; of &#39;_lsprof.Profiler&#39; objects}</span>
+<span class="go">        1    0.000    0.000    3.165    3.165 &lt;string&gt;:1(&lt;module&gt;)</span>
+
+<span class="gp">In [3]: </span><span class="o">%</span><span class="k">prun</span> calculate_x()
+<span class="go">         4 function calls in 0.000 seconds</span>
+
+<span class="go">   Ordered by: internal time</span>
+
+<span class="go">   ncalls  tottime  percall  cumtime  percall filename:lineno(function)</span>
+<span class="go">        1    0.000    0.000    0.000    0.000 {built-in method builtins.exec}</span>
+<span class="go">        1    0.000    0.000    0.000    0.000 great_circle.py:12(calculate_x)</span>
+<span class="go">        1    0.000    0.000    0.000    0.000 &lt;string&gt;:1(&lt;module&gt;)</span>
+<span class="go">        1    0.000    0.000    0.000    0.000 {method &#39;disable&#39; of &#39;_lsprof.Profiler&#39; objects}</span>
+</pre></div>
+</div>
+<p>Note that PyCharm supports profilers, including cProfile.</p>
+<p><a class="reference external" href="https://www.jetbrains.com/help/pycharm/profiler.html">https://www.jetbrains.com/help/pycharm/profiler.html</a></p>
+</div>
 </div>
 <div class="section" id="pypy">
 <h3>PyPy<a class="headerlink" href="#pypy" title="Permalink to this headline">¶</a></h3>
+<p>PyPy is an alternative Python interpreter focused on performance.  It uses an optimizing just-in-time compiler which is particularly well suited to long-running programs.</p>
+<p>With very large data sets Python sometimes chokes whereas PyPy keeps going.</p>
+<p>PyPy is best evaluated directly vis-a-via the standard CPython reference interpreter.  Profile code under standard Python and then under PyPy.</p>
+<p>PyPy can improve code that is factored out to functions, the more granular the better in some cases.  Note that in the video, during the last timing test with a large number of iterations, PyPy runs faster with the factored code than the unfactored code.  Remember to rely on timing and profiling to determine the best structure for your use case.</p>
+<p><a class="reference external" href="https://github.com/rriehle/ProfilingPerformance/tree/master/source/scripts">https://github.com/rriehle/ProfilingPerformance/tree/master/source/scripts</a></p>
+<p>[Video: PyPy]</p>
 </div>
 <div class="section" id="cython">
 <h3>Cython<a class="headerlink" href="#cython" title="Permalink to this headline">¶</a></h3>
+<p>[Video: Great Circle Part 1]</p>
+<p>Cython is Python’s bridge to C.  In allows you to continue to work largely in Python, albeit Python with a few extensions, and yet produce fast, statically compiled libraries to link into your Python code.</p>
+<p>Cython provides a keyword, cdef which provides access to C types such as char, int, long, float, double, struct and enum.  It also enables type delectations for function or method return values.  Take for instance the following function declaration.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">cdef</span> <span class="n">double</span> <span class="n">great_circle</span><span class="p">(</span><span class="n">double</span> <span class="n">lon1</span><span class="p">,</span> <span class="n">double</span> <span class="n">lat1</span><span class="p">,</span> <span class="n">double</span> <span class="n">lon2</span><span class="p">,</span> <span class="n">double</span> <span class="n">lat2</span><span class="p">):</span>
+    <span class="n">cdef</span> <span class="n">double</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">x</span>
+</pre></div>
+</div>
+<p>The great_circle function above is defined specifying double as the type of its return value.  Each argument is declared to be of type double, and a series of symbols which will be used later in the function are all defined to be of type double.  The cython compiler uses this information to produce a statically compiled library which is called from Python.  Since this is no longer standard Python we no longer save it in files with .py extensions, instead by convention we use .pyx.</p>
+<p>Cython involves a different workflow, because it is a statically compiled environment.  Statically compiled programming environments, including C and Cython, have separate compile, link and run steps.  You can’t simply type your code into an interpreter and get an immediate result.  Statically compiled programming environments also have tooling to support the static build workflow.  These tools include Python’s distutils used by cython setup files and optionally Gnu Make used to manage the build dependencies of projects large and small.</p>
+<p>This is <code class="docutils literal"><span class="pre">great_circle_setup_v1.py</span></code> which is one of the cython setup files for use with the Great Circle code.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">distutils.core</span> <span class="kn">import</span> <span class="n">setup</span>
+<span class="kn">from</span> <span class="nn">Cython.Build</span> <span class="kn">import</span> <span class="n">cythonize</span>
+
+<span class="n">setup</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Great Circle v1&#39;</span><span class="p">,</span>
+    <span class="n">ext_modules</span><span class="o">=</span><span class="n">cythonize</span><span class="p">(</span><span class="s2">&quot;great_circle_v1.pyx&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The setup file tells Python how to have Cython build a statically compiled library to call from within Python.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ python great_circle_setup_v1.py build_ext --inplace
+</pre></div>
+</div>
+<p>There are two main hurdles in learning to use Cython.  The first involves the extensions to the Python language which are for the most part borrowed directly from C.  Without familiarity with C it may not be clear what these new language elements mean, or how or why they are used.  The second hurdle involves the build process associated with statically compiled languages — i.e., the separate compile, link and run steps which will feel foreign to someone coming strictly from an interpreted language like Python.  In both cases programmers familiar with C will have an advantage over those without.  As with any new worthwhile programming strategy it will take an investment in time and effort to learn this new tool.</p>
+<p>The video links start to pull this information together.  Arm yourself with the sample code when you watch Part 2.</p>
+<p><a class="reference external" href="https://github.com/rriehle/ProfilingPerformance/tree/master/source/solutions/cython">https://github.com/rriehle/ProfilingPerformance/tree/master/source/solutions/cython</a></p>
+<p>[Video: Great Circle Part 2]</p>
 </div>
 </div>
 <div class="section" id="quiz">
 <h2>Quiz<a class="headerlink" href="#quiz" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p class="first">The best way to improve the performance of your system is to.</p>
+<div class="line-block">
+<div class="line">Profile and time it first!</div>
+<div class="line">Jump right in and start making any changes that feel right!</div>
 </div>
-<div class="section" id="activity">
-<h2>Activity<a class="headerlink" href="#activity" title="Permalink to this headline">¶</a></h2>
+</li>
+<li><p class="first">In order to make Python perform well you need to know C.</p>
+<div class="line-block">
+<div class="line">True</div>
+<div class="line">False</div>
+</div>
+</li>
+<li><p class="first">Guido van Rossum, Python’s creator, seems upset and worried the existence of competing implementations of the language such as PyPy.</p>
+<div class="line-block">
+<div class="line">True</div>
+<div class="line">False</div>
+</div>
+</li>
+<li><p class="first">In order to use PyPy you need to know C.</p>
+<div class="line-block">
+<div class="line">True</div>
+<div class="line">False</div>
+</div>
+</li>
+<li><p class="first">In order to use Cython you need to know C.</p>
+<div class="line-block">
+<div class="line">Not really</div>
+<div class="line">A little bit</div>
+<div class="line">Yeah, okay, it really helps</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="activities">
+<h2>Activities<a class="headerlink" href="#activities" title="Permalink to this headline">¶</a></h2>
+<p>Spend class time in groups or as a whole using any of the modules or techniques referenced above.  Of particular interest:</p>
+<ul class="simple">
+<li>Explore code-only performance improvement strategies such as memoization.</li>
+<li>Explore/demo cProfile side by side with PyCharm’s built-in profilers</li>
+<li>Use PyPy as the runtime interpreter for code developed by students during the curriculum.</li>
+</ul>
+<p>Play with Cython and the Great Circle code!</p>
+<ul class="simple">
+<li>Abandon Python’s math library and use <code class="docutils literal"><span class="pre">cdef</span> <span class="pre">extern</span></code> to import and access C math functions from the Python code.  (This provides vast improvements to the great_circle code!)</li>
+<li>Dig into the compile and link steps required by Cython.</li>
+<li>Work with setup files or any of the ways to build cython-generated libraries.
+| <a class="reference external" href="http://cython.readthedocs.io/en/latest/src/quickstart/build.html">http://cython.readthedocs.io/en/latest/src/quickstart/build.html</a></li>
+<li>Work with Cython profiling
+| <a class="reference external" href="http://docs.cython.org/en/latest/src/tutorial/profiling_tutorial.html">http://docs.cython.org/en/latest/src/tutorial/profiling_tutorial.html</a></li>
+<li>Create a Makefile to manage the build (compile/link steps) for all the Cython code you’re generating.
+| <a class="reference external" href="https://www.gnu.org/software/make/">https://www.gnu.org/software/make/</a></li>
+</ul>
 </div>
 <div class="section" id="assignment">
 <h2>Assignment<a class="headerlink" href="#assignment" title="Permalink to this headline">¶</a></h2>
+<p>There is no homework assignment for this lesson, since it is the last of the quarter.  Instead spend class time on suggestions in the Activity section.</p>
 </div>
 <div class="section" id="indices-and-tables">
 <h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
@@ -139,23 +477,25 @@ $ gtime --verbose find ~/Documents
 <li><a class="reference internal" href="#">Profiling &amp; Performance</a><ul>
 <li><a class="reference internal" href="#introduction">Introduction</a><ul>
 <li><a class="reference internal" href="#learning-objectives">Learning Objectives</a></li>
+<li><a class="reference internal" href="#recommended-text">Recommended Text</a></li>
 <li><a class="reference internal" href="#new-words-or-concepts">New Words or Concepts</a></li>
 <li><a class="reference internal" href="#required-reading">Required Reading</a></li>
 <li><a class="reference internal" href="#optional-reading">Optional Reading</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#content">Content</a><ul>
-<li><a class="reference internal" href="#profiling">Profiling</a><ul>
-<li><a class="reference internal" href="#time-timeit">time &amp; timeit</a></li>
+<li><a class="reference internal" href="#profiling-timing">Profiling &amp; Timing</a><ul>
+<li><a class="reference internal" href="#time">time</a></li>
+<li><a class="reference internal" href="#timeit">timeit</a></li>
+<li><a class="reference internal" href="#cprofile">cProfile</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#memoization">Memoization</a></li>
 <li><a class="reference internal" href="#pypy">PyPy</a></li>
 <li><a class="reference internal" href="#cython">Cython</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#quiz">Quiz</a></li>
-<li><a class="reference internal" href="#activity">Activity</a></li>
+<li><a class="reference internal" href="#activities">Activities</a></li>
 <li><a class="reference internal" href="#assignment">Assignment</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
