@@ -160,6 +160,8 @@ https://docs.python.org/3.6/library/timeit.html
 
 Timeit is used extensively in the videos associated with this lesson.
 
+[Video: Profiling]
+
 
 cProfile
 --------
