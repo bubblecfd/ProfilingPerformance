@@ -340,6 +340,8 @@ PyPy is best evaluated directly vis-a-via the standard CPython reference interpr
 
 PyPy can improve code that is factored out to functions, the more granular the better in some cases.  Note that in the video, during the last timing test with a large number of iterations, PyPy runs faster with the factored code than the unfactored code.  Remember to rely on timing and profiling to determine the best structure for your use case.
 
+https://github.com/rriehle/ProfilingPerformance/tree/master/source/scripts
+
 [Video: PyPy]
 
 
@@ -381,7 +383,7 @@ The setup file tells Python how to have Cython build a statically compiled libra
 
 The video links all of this information together.  Arm yourself with the sample code when you watch Part 2.
 
-
+:download:` <>`
 
 There are two main hurdles in learning to use Cython.  The first involves the extensions to the Python language which are for the most part borrowed directly from C.  Without familiarity with C it may not be clear what these new language elements mean, or how or why they are used.  The second hurdle involves the build process associated with statically compiled languages --- i.e., the separate compile, link and run steps which will feel foreign to someone coming strictly from an interpreted language like Python.  In both cases programmers familiar with C will have an advantage over those without.  As with any new worthwhile programming strategy it will take an investment in time and effort to learn this new tool.
 
