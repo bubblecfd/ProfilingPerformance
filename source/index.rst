@@ -168,7 +168,7 @@ The same manner in which Python offers debuggers (pdb, ipdb) it also supplies a 
 
 The profiler when invoked from the command line with default arguments provides information not only about your script, but also about how it exercises the Python interpreter.
 
-    .. code-block:: bash
+.. code-block:: bash
 
     $ python -m cProfile great_circle.py
              12000539 function calls (12000538 primitive calls) in 3.179 seconds
