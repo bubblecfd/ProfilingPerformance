@@ -79,6 +79,7 @@ Optional Reading
 
 * Profiling
 
+  | https://pypi.python.org/pypi/memory_profiler
   | https://www.jetbrains.com/help/pycharm/profiler.html
 
 
@@ -320,13 +321,12 @@ Note that PyCharm supports profilers, including cProfile.
 https://www.jetbrains.com/help/pycharm/profiler.html
 
 
-Memoization
-===========
+.. Memoization
+.. ===========
 
 .. Resource:  https://anandology.com/python-practice-book/functional-programming.html#example-memoize
 
 .. Resource: Screenshots of Joe's code from 2018-03-07
-
 
 
 PyPy
